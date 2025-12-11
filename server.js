@@ -1,10 +1,20 @@
 const express = require('express');
 const axios = require('axios');
 const path = require('path');
+const https = require('https');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3000';
+const API_BASE_URL = process.env.API_BASE_URL || 'https://100.48.62.235';
+
+// Create axios instance with SSL handling for IP-based connections
+// Since we're connecting to an IP address, SSL certificate validation will fail
+// as certificates are issued for domain names, not IP addresses
+const axiosInstance = axios.create({
+  httpsAgent: new https.Agent({
+    rejectUnauthorized: false // Disable SSL certificate validation for IP addresses
+  })
+});
 
 // Middleware
 app.use(express.static('public'));
@@ -126,9 +136,16 @@ app.get('/', async (req, res) => {
     
     // Fetch linktree data from API
     try {
-      const response = await axios.get(`${API_BASE_URL}/linktree?BIS=${encodeURIComponent(BIS)}`, {
-        validateStatus: () => true // Don't throw on any status
+      const apiUrl = `${API_BASE_URL}/linktree/?BIS=${encodeURIComponent(BIS)}`;
+      console.log(`Fetching from API: ${apiUrl}`);
+      const response = await axiosInstance.get(apiUrl, {
+        validateStatus: () => true, // Don't throw on any status
+        headers: {
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+        }
       });
+      console.log(`API Response Status: ${response.status}`);
       
       if (response.status === 200 && response.headers['content-type']?.includes('text/html')) {
         // If API returns HTML, forward it
@@ -185,6 +202,15 @@ app.get('/', async (req, res) => {
       }
     } catch (error) {
       console.error('Error fetching linktree:', error.message);
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        response: error.response ? {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          headers: error.response.headers
+        } : null
+      });
       return res.status(500).send(`
 <!DOCTYPE html>
 <html lang="en">
