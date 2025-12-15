@@ -343,6 +343,9 @@ app.get('/', async (req, res) => {
         const sortedButtons = account.buttons ? [...account.buttons].sort((a, b) => (a.order || 0) - (b.order || 0)) : [];
         
         // Generate HTML for link tree page
+        // Construct loading image URL from BIS parameter
+        const loadingImageUrl = `https://raw.githubusercontent.com/younuzbn/kochionereviewloadingasset/main/${escapeHtml(BIS)}.png`;
+        
         const html = `
 <!DOCTYPE html>
 <html lang="en">
@@ -362,12 +365,41 @@ app.get('/', async (req, res) => {
             flex-direction: column;
             align-items: center;
         }
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .loading-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+        .loading-screen img {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
         .container {
             max-width: 600px;
             width: 100%;
             display: flex;
             flex-direction: column;
             align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .container.visible {
+            opacity: 1;
         }
         .banner {
             width: 100%;
@@ -471,6 +503,9 @@ app.get('/', async (req, res) => {
     </style>
 </head>
 <body>
+    <div class="loading-screen" id="loadingScreen">
+        <img src="${loadingImageUrl}" alt="Loading..." onerror="this.parentElement.style.display='none';">
+    </div>
     <div class="container">
         ${account.bannerImage && account.bannerImage.url && !account.isBannerHidden ? `
         <div class="banner">
@@ -505,6 +540,53 @@ app.get('/', async (req, res) => {
             <a href="/">powered by kochi.one</a>
         </div>
     </div>
+    <script>
+        // Show loading screen immediately, then hide it and show content after 1.5 seconds
+        (function() {
+            const loadingScreen = document.getElementById('loadingScreen');
+            const container = document.querySelector('.container');
+            
+            // Ensure loading screen is visible and content is hidden initially
+            if (loadingScreen) {
+                loadingScreen.style.display = 'flex';
+            }
+            if (container) {
+                container.style.opacity = '0';
+            }
+            
+            // After page loads, wait minimum 1.5 seconds
+            window.addEventListener('load', function() {
+                setTimeout(function() {
+                    // Hide loading screen
+                    if (loadingScreen) {
+                        loadingScreen.classList.add('hidden');
+                        setTimeout(function() {
+                            loadingScreen.remove();
+                        }, 300);
+                    }
+                    // Show content
+                    if (container) {
+                        container.classList.add('visible');
+                    }
+                }, 1500); // Minimum 1.5 seconds display time
+            });
+            
+            // Fallback: if page is already loaded, start timer immediately
+            if (document.readyState === 'complete') {
+                setTimeout(function() {
+                    if (loadingScreen) {
+                        loadingScreen.classList.add('hidden');
+                        setTimeout(function() {
+                            loadingScreen.remove();
+                        }, 300);
+                    }
+                    if (container) {
+                        container.classList.add('visible');
+                    }
+                }, 1500);
+            }
+        })();
+    </script>
 </body>
 </html>
         `;
@@ -870,6 +952,9 @@ app.get('/linktree', async (req, res) => {
         const sortedButtons = account.buttons ? [...account.buttons].sort((a, b) => (a.order || 0) - (b.order || 0)) : [];
         
         // Generate HTML for link tree page
+        // Construct loading image URL from BIS parameter
+        const loadingImageUrl = `https://raw.githubusercontent.com/younuzbn/kochionereviewloadingasset/main/${escapeHtml(BIS)}.png`;
+        
         const html = `
 <!DOCTYPE html>
 <html lang="en">
@@ -889,12 +974,41 @@ app.get('/linktree', async (req, res) => {
             flex-direction: column;
             align-items: center;
         }
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .loading-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+        .loading-screen img {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
         .container {
             max-width: 600px;
             width: 100%;
             display: flex;
             flex-direction: column;
             align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .container.visible {
+            opacity: 1;
         }
         .banner {
             width: 100%;
@@ -998,6 +1112,9 @@ app.get('/linktree', async (req, res) => {
     </style>
 </head>
 <body>
+    <div class="loading-screen" id="loadingScreen">
+        <img src="${loadingImageUrl}" alt="Loading..." onerror="this.parentElement.style.display='none';">
+    </div>
     <div class="container">
         ${account.bannerImage && account.bannerImage.url && !account.isBannerHidden ? `
         <div class="banner">
@@ -1032,6 +1149,53 @@ app.get('/linktree', async (req, res) => {
             <a href="/">powered by kochi.one</a>
         </div>
     </div>
+    <script>
+        // Show loading screen immediately, then hide it and show content after 1.5 seconds
+        (function() {
+            const loadingScreen = document.getElementById('loadingScreen');
+            const container = document.querySelector('.container');
+            
+            // Ensure loading screen is visible and content is hidden initially
+            if (loadingScreen) {
+                loadingScreen.style.display = 'flex';
+            }
+            if (container) {
+                container.style.opacity = '0';
+            }
+            
+            // After page loads, wait minimum 1.5 seconds
+            window.addEventListener('load', function() {
+                setTimeout(function() {
+                    // Hide loading screen
+                    if (loadingScreen) {
+                        loadingScreen.classList.add('hidden');
+                        setTimeout(function() {
+                            loadingScreen.remove();
+                        }, 300);
+                    }
+                    // Show content
+                    if (container) {
+                        container.classList.add('visible');
+                    }
+                }, 1500); // Minimum 1.5 seconds display time
+            });
+            
+            // Fallback: if page is already loaded, start timer immediately
+            if (document.readyState === 'complete') {
+                setTimeout(function() {
+                    if (loadingScreen) {
+                        loadingScreen.classList.add('hidden');
+                        setTimeout(function() {
+                            loadingScreen.remove();
+                        }, 300);
+                    }
+                    if (container) {
+                        container.classList.add('visible');
+                    }
+                }, 1500);
+            }
+        })();
+    </script>
 </body>
 </html>
         `;
