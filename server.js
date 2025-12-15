@@ -395,11 +395,6 @@ app.get('/', async (req, res) => {
             display: flex;
             flex-direction: column;
             align-items: center;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        .container.visible {
-            opacity: 1;
         }
         .banner {
             width: 100%;
@@ -541,51 +536,19 @@ app.get('/', async (req, res) => {
         </div>
     </div>
     <script>
-        // Show loading screen immediately, then hide it and show content after 1.5 seconds
-        (function() {
+        // Hide loading screen when page is fully loaded
+        window.addEventListener('load', function() {
             const loadingScreen = document.getElementById('loadingScreen');
-            const container = document.querySelector('.container');
-            
-            // Ensure loading screen is visible and content is hidden initially
             if (loadingScreen) {
-                loadingScreen.style.display = 'flex';
-            }
-            if (container) {
-                container.style.opacity = '0';
-            }
-            
-            // After page loads, wait minimum 1.5 seconds
-            window.addEventListener('load', function() {
                 setTimeout(function() {
-                    // Hide loading screen
-                    if (loadingScreen) {
-                        loadingScreen.classList.add('hidden');
-                        setTimeout(function() {
-                            loadingScreen.remove();
-                        }, 300);
-                    }
-                    // Show content
-                    if (container) {
-                        container.classList.add('visible');
-                    }
+                    loadingScreen.classList.add('hidden');
+                    // Remove from DOM after animation
+                    setTimeout(function() {
+                        loadingScreen.remove();
+                    }, 300);
                 }, 1500); // Minimum 1.5 seconds display time
-            });
-            
-            // Fallback: if page is already loaded, start timer immediately
-            if (document.readyState === 'complete') {
-                setTimeout(function() {
-                    if (loadingScreen) {
-                        loadingScreen.classList.add('hidden');
-                        setTimeout(function() {
-                            loadingScreen.remove();
-                        }, 300);
-                    }
-                    if (container) {
-                        container.classList.add('visible');
-                    }
-                }, 1500);
             }
-        })();
+        });
     </script>
 </body>
 </html>
@@ -1004,11 +967,6 @@ app.get('/linktree', async (req, res) => {
             display: flex;
             flex-direction: column;
             align-items: center;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        .container.visible {
-            opacity: 1;
         }
         .banner {
             width: 100%;
@@ -1150,51 +1108,19 @@ app.get('/linktree', async (req, res) => {
         </div>
     </div>
     <script>
-        // Show loading screen immediately, then hide it and show content after 1.5 seconds
-        (function() {
+        // Hide loading screen when page is fully loaded
+        window.addEventListener('load', function() {
             const loadingScreen = document.getElementById('loadingScreen');
-            const container = document.querySelector('.container');
-            
-            // Ensure loading screen is visible and content is hidden initially
             if (loadingScreen) {
-                loadingScreen.style.display = 'flex';
-            }
-            if (container) {
-                container.style.opacity = '0';
-            }
-            
-            // After page loads, wait minimum 1.5 seconds
-            window.addEventListener('load', function() {
                 setTimeout(function() {
-                    // Hide loading screen
-                    if (loadingScreen) {
-                        loadingScreen.classList.add('hidden');
-                        setTimeout(function() {
-                            loadingScreen.remove();
-                        }, 300);
-                    }
-                    // Show content
-                    if (container) {
-                        container.classList.add('visible');
-                    }
+                    loadingScreen.classList.add('hidden');
+                    // Remove from DOM after animation
+                    setTimeout(function() {
+                        loadingScreen.remove();
+                    }, 300);
                 }, 1500); // Minimum 1.5 seconds display time
-            });
-            
-            // Fallback: if page is already loaded, start timer immediately
-            if (document.readyState === 'complete') {
-                setTimeout(function() {
-                    if (loadingScreen) {
-                        loadingScreen.classList.add('hidden');
-                        setTimeout(function() {
-                            loadingScreen.remove();
-                        }, 300);
-                    }
-                    if (container) {
-                        container.classList.add('visible');
-                    }
-                }, 1500);
             }
-        })();
+        });
     </script>
 </body>
 </html>
