@@ -134,32 +134,51 @@ app.get('/', async (req, res) => {
       `);
     }
     
-    // Fetch linktree data from API
-    try {
-      const apiUrl = `${API_BASE_URL}/linktree/?BIS=${encodeURIComponent(BIS)}`;
-      console.log(`Fetching from API: ${apiUrl}`);
-      const response = await axiosInstance.get(apiUrl, {
-        validateStatus: () => true, // Don't throw on any status
-        headers: {
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
-        }
-      });
-      console.log(`API Response Status: ${response.status}`);
-      
-      if (response.status === 200 && response.headers['content-type']?.includes('text/html')) {
-        // If API returns HTML, forward it
-        res.setHeader('Content-Type', 'text/html');
-        return res.send(response.data);
-      } else if (response.status === 404 || response.status === 400) {
-        // Handle error responses
-        return res.send(`
+    // Redirect to /linktree route when BIS is provided
+    return res.redirect(`/linktree?BIS=${encodeURIComponent(BIS)}`);
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+// Helper function to escape HTML to prevent XSS
+function escapeHtml(text) {
+  if (!text) return '';
+  const map = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  };
+  return String(text).replace(/[&<>"']/g, m => map[m]);
+}
+
+// Helper function to validate URL
+function isValidUrl(string) {
+  try {
+    const url = new URL(string);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch (_) {
+    return false;
+  }
+}
+
+// Link Tree Public View Route
+app.get('/linktree', async (req, res) => {
+  try {
+    const BIS = req.query.BIS;
+    
+    // Check if BIS parameter is provided
+    if (!BIS) {
+      return res.send(`
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Link Tree - Not Found</title>
+    <title>Missing BIS Parameter</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -179,8 +198,87 @@ app.get('/', async (req, res) => {
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             max-width: 500px;
         }
-        h1 { color: #dc3545; margin-bottom: 16px; }
-        p { color: #86868b; margin-bottom: 24px; }
+        h1 { color: #dc3545; margin-bottom: 16px; font-size: 24px; }
+        p { color: #86868b; margin-bottom: 24px; font-size: 16px; }
+        code {
+            background: #f5f5f7;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <h1>Missing BIS Parameter</h1>
+        <p>Please provide a BIS parameter in the URL.</p>
+        <p style="margin-top: 16px;"><code>Example: /linktree?BIS=1</code></p>
+        <a href="/" style="display: inline-block; margin-top: 24px;">← Back to Home</a>
+    </div>
+</body>
+</html>
+      `);
+    }
+    
+    // Fetch linktree data from API
+    try {
+      const apiUrl = `${API_BASE_URL}/admin/api/public/linktree?BIS=${encodeURIComponent(BIS)}`;
+      console.log(`Fetching linktree from API: ${apiUrl}`);
+      
+      const response = await axiosInstance.get(apiUrl, {
+        validateStatus: () => true, // Don't throw on any status
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log(`API Response Status: ${response.status}`);
+      console.log('API Response Data:', JSON.stringify(response.data, null, 2));
+      
+      // Handle 404 - Account not found
+      if (response.status === 404) {
+        return res.send(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Link Tree Not Found</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #f5f5f7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .error-container {
+            text-align: center;
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+        }
+        h1 { color: #dc3545; margin-bottom: 16px; font-size: 24px; }
+        p { color: #86868b; margin-bottom: 24px; font-size: 16px; }
+        code {
+            background: #f5f5f7;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
         a {
             color: #667eea;
             text-decoration: none;
@@ -191,14 +289,215 @@ app.get('/', async (req, res) => {
 <body>
     <div class="error-container">
         <h1>Link Tree Not Found</h1>
-        <p>No active link tree account found with BIS=${BIS}</p>
-        <a href="/">← Back to Home</a>
+        <p>No active link tree account found with <code>BIS=${escapeHtml(BIS)}</code></p>
+        <a href="/" style="display: inline-block; margin-top: 24px;">← Back to Home</a>
     </div>
 </body>
 </html>
         `);
+      }
+      
+      // Handle other error statuses
+      if (response.status !== 200) {
+        throw new Error(`API returned status ${response.status}`);
+      }
+      
+      // Parse response
+      const result = response.data;
+      console.log('Parsed API Result:', JSON.stringify(result, null, 2));
+      
+      // Check if response has the expected structure
+      if (result.status === 'success' && result.data && result.data.account) {
+        const account = result.data.account;
+        
+        // Check for redirection - this must happen BEFORE rendering any content
+        if (account.isRedirectionEnabled === true && account.redirectionUrl) {
+          const redirectUrl = account.redirectionUrl.trim();
+          
+          // Validate URL before redirecting
+          if (isValidUrl(redirectUrl)) {
+            console.log(`Redirecting to: ${redirectUrl}`);
+            return res.redirect(302, redirectUrl);
+          } else {
+            console.warn(`Invalid redirection URL: ${redirectUrl}`);
+            // Continue to render page if URL is invalid
+          }
+        }
+        
+        // Sort buttons by order
+        const sortedButtons = account.buttons ? [...account.buttons].sort((a, b) => (a.order || 0) - (b.order || 0)) : [];
+        
+        // Generate HTML for link tree page
+        const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${escapeHtml(account.accountName || 'Link Tree')} - kochi.one</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #ffffff;
+            color: #1d1d1f;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            max-width: 600px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .banner {
+            width: 100%;
+            max-width: 600px;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 32px;
+            display: ${account.bannerImage && account.bannerImage.url && !account.isBannerHidden ? 'block' : 'none'};
+        }
+        .banner img {
+            width: 100%;
+            height: auto;
+            display: block;
+            object-fit: cover;
+        }
+        .account-name {
+            font-size: 32px;
+            font-weight: 600;
+            color: #1d1d1f;
+            text-align: center;
+            margin-bottom: 40px;
+            line-height: 1.2;
+        }
+        .buttons-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 40px;
+        }
+        .button-link {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 20px;
+            background: #ffffff;
+            border: 1.5px solid #e5e5e7;
+            border-radius: 12px;
+            text-decoration: none;
+            color: #1d1d1f;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .button-link:hover {
+            border-color: #86868b;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        .button-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            object-fit: cover;
+            flex-shrink: 0;
+            background: #f5f5f7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        .button-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        .button-label {
+            font-size: 16px;
+            font-weight: 500;
+            flex: 1;
+            text-align: left;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #86868b;
+            font-size: 16px;
+        }
+        .footer {
+            margin-top: auto;
+            padding-top: 40px;
+            text-align: center;
+            color: #86868b;
+            font-size: 14px;
+        }
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-size: 16px;
+            color: #86868b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        ${account.bannerImage && account.bannerImage.url && !account.isBannerHidden ? `
+        <div class="banner">
+            <img src="${escapeHtml(account.bannerImage.url)}" alt="Banner" onerror="this.style.display='none';">
+        </div>
+        ` : ''}
+        
+        <h1 class="account-name">${escapeHtml(account.accountName || 'Link Tree')}</h1>
+        
+        <div class="buttons-container">
+            ${sortedButtons.length > 0 ? sortedButtons.map(button => {
+                const iconHtml = button.icon && button.icon.url 
+                    ? `<img src="${escapeHtml(button.icon.url)}" alt="${escapeHtml(button.label || '')}" onerror="this.parentElement.innerHTML='🔗';">`
+                    : '🔗';
+                const label = escapeHtml(button.label || 'Link');
+                const link = escapeHtml(button.link || '#');
+                
+                return `
+            <a href="${link}" class="button-link" target="_blank" rel="noopener noreferrer">
+                <div class="button-icon">${iconHtml}</div>
+                <div class="button-label">${label}</div>
+            </a>
+                `;
+            }).join('') : `
+            <div class="empty-state">
+                No buttons added yet. Add buttons from the admin panel.
+            </div>
+            `}
+        </div>
+        
+        <div class="footer">
+            <a href="/">powered by kochi.one</a>
+        </div>
+    </div>
+</body>
+</html>
+        `;
+        
+        return res.send(html);
       } else {
-        throw new Error('Unexpected response from API');
+        // Unexpected response structure
+        throw new Error('Unexpected API response structure');
       }
     } catch (error) {
       console.error('Error fetching linktree:', error.message);
@@ -208,9 +507,10 @@ app.get('/', async (req, res) => {
         response: error.response ? {
           status: error.response.status,
           statusText: error.response.statusText,
-          headers: error.response.headers
+          data: error.response.data
         } : null
       });
+      
       return res.status(500).send(`
 <!DOCTYPE html>
 <html lang="en">
@@ -237,8 +537,8 @@ app.get('/', async (req, res) => {
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             max-width: 500px;
         }
-        h1 { color: #dc3545; margin-bottom: 16px; }
-        p { color: #86868b; margin-bottom: 24px; }
+        h1 { color: #dc3545; margin-bottom: 16px; font-size: 24px; }
+        p { color: #86868b; margin-bottom: 24px; font-size: 16px; }
         a {
             color: #667eea;
             text-decoration: none;
@@ -250,7 +550,7 @@ app.get('/', async (req, res) => {
     <div class="error-container">
         <h1>Error</h1>
         <p>Unable to load link tree. Please try again later.</p>
-        <a href="/">← Back to Home</a>
+        <a href="/" style="display: inline-block; margin-top: 24px;">← Back to Home</a>
     </div>
 </body>
 </html>
