@@ -7,7 +7,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 const API_BASE_URL = process.env.API_BASE_URL || 'https://100.48.62.235';
 
-// Create axios instance with SSL handling for IP-based connections
+// Create axios instance with SSL handling for IP-based connections 1
 // Since we're connecting to an IP address, SSL certificate validation will fail
 // as certificates are issued for domain names, not IP addresses
 const axiosInstance = axios.create({
