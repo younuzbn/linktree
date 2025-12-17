@@ -481,7 +481,7 @@ app.get('/', async (req, res) => {
             font-size: 14px;
         }
         .footer a {
-            color: #667eea;
+            color: #000000;
             text-decoration: none;
         }
         .footer a:hover {
@@ -532,7 +532,7 @@ app.get('/', async (req, res) => {
         </div>
         
         <div class="footer">
-            <a href="/">powered by kochi.one</a>
+            <a href="https://www.kochi.one" target="_blank" rel="noopener noreferrer">www.kochi.one</a>
         </div>
     </div>
     <script>
@@ -1053,7 +1053,7 @@ app.get('/linktree', async (req, res) => {
             font-size: 14px;
         }
         .footer a {
-            color: #667eea;
+            color: #000000;
             text-decoration: none;
         }
         .footer a:hover {
@@ -1104,7 +1104,7 @@ app.get('/linktree', async (req, res) => {
         </div>
         
         <div class="footer">
-            <a href="/">powered by kochi.one</a>
+            <a href="https://www.kochi.one" target="_blank" rel="noopener noreferrer">www.kochi.one</a>
         </div>
     </div>
     <script>
