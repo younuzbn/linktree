@@ -540,6 +540,23 @@ app.get('/', async (req, res) => {
         </div>
     </div>
     <script>
+        // Track view analytics
+        (function() {
+            const BIS = '${escapeHtml(BIS)}';
+            if (BIS) {
+                // Track view asynchronously (don't block page load)
+                fetch('${API_BASE_URL}/api/public/analytics/track-view', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ BIS: BIS })
+                }).catch(err => {
+                    console.log('Analytics tracking failed (non-critical):', err);
+                });
+            }
+        })();
+        
         // Hide loading screen when page is fully loaded
         window.addEventListener('load', function() {
             const loadingScreen = document.getElementById('loadingScreen');
@@ -1116,6 +1133,23 @@ app.get('/linktree', async (req, res) => {
         </div>
     </div>
     <script>
+        // Track view analytics
+        (function() {
+            const BIS = '${escapeHtml(BIS)}';
+            if (BIS) {
+                // Track view asynchronously (don't block page load)
+                fetch('${API_BASE_URL}/api/public/analytics/track-view', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ BIS: BIS })
+                }).catch(err => {
+                    console.log('Analytics tracking failed (non-critical):', err);
+                });
+            }
+        })();
+        
         // Hide loading screen when page is fully loaded
         window.addEventListener('load', function() {
             const loadingScreen = document.getElementById('loadingScreen');
