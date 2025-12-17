@@ -339,8 +339,12 @@ app.get('/', async (req, res) => {
           }
         }
         
-        // Sort buttons by order
-        const sortedButtons = account.buttons ? [...account.buttons].sort((a, b) => (a.order || 0) - (b.order || 0)) : [];
+        // Sort buttons by order and filter out hidden buttons
+        const sortedButtons = account.buttons 
+          ? [...account.buttons]
+              .filter(button => button.isVisible !== false)
+              .sort((a, b) => (a.order || 0) - (b.order || 0))
+          : [];
         
         // Generate HTML for link tree page
         // Construct loading image URL from BIS parameter
@@ -911,8 +915,12 @@ app.get('/linktree', async (req, res) => {
           }
         }
         
-        // Sort buttons by order
-        const sortedButtons = account.buttons ? [...account.buttons].sort((a, b) => (a.order || 0) - (b.order || 0)) : [];
+        // Sort buttons by order and filter out hidden buttons
+        const sortedButtons = account.buttons 
+          ? [...account.buttons]
+              .filter(button => button.isVisible !== false)
+              .sort((a, b) => (a.order || 0) - (b.order || 0))
+          : [];
         
         // Generate HTML for link tree page
         // Construct loading image URL from BIS parameter
