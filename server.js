@@ -11,22 +11,43 @@ const API_BASE_URL = process.env.API_BASE_URL || 'https://100.48.62.235';
 // Since we're connecting to an IP address, SSL certificate validation will fail
 // as certificates are issued for domain names, not IP addresses
 const axiosInstance = axios.create({
-  httpsAgent: new https.Agent({
-    rejectUnauthorized: false // Disable SSL certificate validation for IP addresses
-  })
+    httpsAgent: new https.Agent({
+        rejectUnauthorized: false // Disable SSL certificate validation for IP addresses
+    })
 });
 
 // Middleware
 app.use(express.static('public'));
 app.use(express.json());
 
+// Proxy endpoint for analytics to avoid CORS/SSL issues
+app.post('/api/analytics/track-view', async (req, res) => {
+    try {
+        const apiUrl = `${API_BASE_URL}/api/public/analytics/track-view`;
+        console.log(`Proxying analytics to: ${apiUrl}`);
+
+        // Forward the body from the client
+        const response = await axiosInstance.post(apiUrl, req.body, {
+            validateStatus: () => true,
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        res.status(response.status).json(response.data);
+    } catch (error) {
+        console.error('Error proxying analytics:', error.message);
+        res.status(500).json({ status: 'error', message: 'Failed to track analytics' });
+    }
+});
+
 // Home page - displays linktree based on BIS parameter
 app.get('/', async (req, res) => {
-  try {
-    const BIS = req.query.BIS;
-    
-    if (!BIS) {
-      return res.send(`
+    try {
+        const BIS = req.query.BIS;
+
+        if (!BIS) {
+            return res.send(`
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -132,28 +153,28 @@ app.get('/', async (req, res) => {
 </body>
 </html>
       `);
-    }
-    
-    // Fetch linktree data from API
-    try {
-      const apiUrl = `${API_BASE_URL}/api/public/linktree?BIS=${encodeURIComponent(BIS)}`;
-      console.log(`Fetching linktree from API: ${apiUrl}`);
-      
-      const response = await axiosInstance.get(apiUrl, {
-        validateStatus: () => true, // Don't throw on any status
-        headers: {
-          'Accept': 'application/json'
-          // NO Content-Type header for GET requests
-          // NO Authorization header - public endpoint
         }
-      });
-      
-      console.log(`API Response Status: ${response.status}`);
-      console.log('API Response Data:', JSON.stringify(response.data, null, 2));
-      
-      // Handle 404 - Account not found
-      if (response.status === 404) {
-        return res.send(`
+
+        // Fetch linktree data from API
+        try {
+            const apiUrl = `${API_BASE_URL}/api/public/linktree?BIS=${encodeURIComponent(BIS)}`;
+            console.log(`Fetching linktree from API: ${apiUrl}`);
+
+            const response = await axiosInstance.get(apiUrl, {
+                validateStatus: () => true, // Don't throw on any status
+                headers: {
+                    'Accept': 'application/json'
+                    // NO Content-Type header for GET requests
+                    // NO Authorization header - public endpoint
+                }
+            });
+
+            console.log(`API Response Status: ${response.status}`);
+            console.log('API Response Data:', JSON.stringify(response.data, null, 2));
+
+            // Handle 404 - Account not found
+            if (response.status === 404) {
+                return res.send(`
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -204,12 +225,12 @@ app.get('/', async (req, res) => {
 </body>
 </html>
         `);
-      }
-      
-      // Handle 401 - Unauthorized
-      if (response.status === 401) {
-        console.error('API returned 401 Unauthorized. Response:', response.data);
-        return res.status(500).send(`
+            }
+
+            // Handle 401 - Unauthorized
+            if (response.status === 401) {
+                console.error('API returned 401 Unauthorized. Response:', response.data);
+                return res.status(500).send(`
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -253,22 +274,22 @@ app.get('/', async (req, res) => {
 </body>
 </html>
         `);
-      }
-      
-      // Handle other error statuses
-      if (response.status !== 200) {
-        console.error(`API returned status ${response.status}. Response:`, response.data);
-        throw new Error(`API returned status ${response.status}`);
-      }
-      
-      // Parse response
-      const result = response.data;
-      console.log('Parsed API Result:', JSON.stringify(result, null, 2));
-      
-      // Check if response has error status
-      if (result && result.status === 'error') {
-        console.error('API returned error status:', result.message);
-        return res.status(404).send(`
+            }
+
+            // Handle other error statuses
+            if (response.status !== 200) {
+                console.error(`API returned status ${response.status}. Response:`, response.data);
+                throw new Error(`API returned status ${response.status}`);
+            }
+
+            // Parse response
+            const result = response.data;
+            console.log('Parsed API Result:', JSON.stringify(result, null, 2));
+
+            // Check if response has error status
+            if (result && result.status === 'error') {
+                console.error('API returned error status:', result.message);
+                return res.status(404).send(`
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -319,38 +340,38 @@ app.get('/', async (req, res) => {
 </body>
 </html>
         `);
-      }
-      
-      // Check if response has the expected structure
-      if (result && result.status === 'success' && result.data && result.data.account) {
-        const account = result.data.account;
-        
-        // Check for redirection - this must happen BEFORE rendering any content
-        if (account.isRedirectionEnabled === true && account.redirectionUrl) {
-          const redirectUrl = account.redirectionUrl.trim();
-          
-          // Validate URL before redirecting
-          if (isValidUrl(redirectUrl)) {
-            console.log(`Redirecting to: ${redirectUrl}`);
-            return res.redirect(302, redirectUrl);
-          } else {
-            console.warn(`Invalid redirection URL: ${redirectUrl}`);
-            // Continue to render page if URL is invalid
-          }
-        }
-        
-        // Sort buttons by order and filter out hidden buttons
-        const sortedButtons = account.buttons 
-          ? [...account.buttons]
-              .filter(button => button.isVisible !== false)
-              .sort((a, b) => (a.order || 0) - (b.order || 0))
-          : [];
-        
-        // Generate HTML for link tree page
-        // Construct loading image URL from BIS parameter
-        const loadingImageUrl = `https://raw.githubusercontent.com/younuzbn/kochionereviewloadingasset/main/${escapeHtml(BIS)}.png`;
-        
-        const html = `
+            }
+
+            // Check if response has the expected structure
+            if (result && result.status === 'success' && result.data && result.data.account) {
+                const account = result.data.account;
+
+                // Check for redirection - this must happen BEFORE rendering any content
+                if (account.isRedirectionEnabled === true && account.redirectionUrl) {
+                    const redirectUrl = account.redirectionUrl.trim();
+
+                    // Validate URL before redirecting
+                    if (isValidUrl(redirectUrl)) {
+                        console.log(`Redirecting to: ${redirectUrl}`);
+                        return res.redirect(302, redirectUrl);
+                    } else {
+                        console.warn(`Invalid redirection URL: ${redirectUrl}`);
+                        // Continue to render page if URL is invalid
+                    }
+                }
+
+                // Sort buttons by order and filter out hidden buttons
+                const sortedButtons = account.buttons
+                    ? [...account.buttons]
+                        .filter(button => button.isVisible !== false)
+                        .sort((a, b) => (a.order || 0) - (b.order || 0))
+                    : [];
+
+                // Generate HTML for link tree page
+                // Construct loading image URL from BIS parameter
+                const loadingImageUrl = `https://raw.githubusercontent.com/younuzbn/kochionereviewloadingasset/main/${escapeHtml(BIS)}.png`;
+
+                const html = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -516,19 +537,19 @@ app.get('/', async (req, res) => {
         
         <div class="buttons-container">
             ${sortedButtons.length > 0 ? sortedButtons.map(button => {
-                const iconHtml = button.icon && button.icon.url 
-                    ? `<img src="${escapeHtml(button.icon.url)}" alt="${escapeHtml(button.label || '')}" onerror="this.parentElement.innerHTML='🔗';">`
-                    : '🔗';
-                const label = escapeHtml(button.label || 'Link');
-                const link = escapeHtml(button.link || '#');
-                
-                return `
+                    const iconHtml = button.icon && button.icon.url
+                        ? `<img src="${escapeHtml(button.icon.url)}" alt="${escapeHtml(button.label || '')}" onerror="this.parentElement.innerHTML='🔗';">`
+                        : '🔗';
+                    const label = escapeHtml(button.label || 'Link');
+                    const link = escapeHtml(button.link || '#');
+
+                    return `
             <a href="${link}" class="button-link" target="_blank" rel="noopener noreferrer">
                 <div class="button-icon">${iconHtml}</div>
                 <div class="button-label">${label}</div>
             </a>
                 `;
-            }).join('') : `
+                }).join('') : `
             <div class="empty-state">
                 No buttons added yet. Add buttons from the admin panel.
             </div>
@@ -545,7 +566,7 @@ app.get('/', async (req, res) => {
             const BIS = '${escapeHtml(BIS)}';
             if (BIS) {
                 // Track view asynchronously (don't block page load)
-                fetch('${API_BASE_URL}/api/public/analytics/track-view', {
+                fetch('/api/analytics/track-view', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -574,25 +595,25 @@ app.get('/', async (req, res) => {
 </body>
 </html>
         `;
-        
-        return res.send(html);
-      } else {
-        // Unexpected response structure
-        throw new Error('Unexpected API response structure');
-      }
-    } catch (error) {
-      console.error('Error fetching linktree:', error.message);
-      console.error('Error details:', {
-        message: error.message,
-        code: error.code,
-        response: error.response ? {
-          status: error.response.status,
-          statusText: error.response.statusText,
-          data: error.response.data
-        } : null
-      });
-      
-      return res.status(500).send(`
+
+                return res.send(html);
+            } else {
+                // Unexpected response structure
+                throw new Error('Unexpected API response structure');
+            }
+        } catch (error) {
+            console.error('Error fetching linktree:', error.message);
+            console.error('Error details:', {
+                message: error.message,
+                code: error.code,
+                response: error.response ? {
+                    status: error.response.status,
+                    statusText: error.response.statusText,
+                    data: error.response.data
+                } : null
+            });
+
+            return res.status(500).send(`
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -636,44 +657,44 @@ app.get('/', async (req, res) => {
 </body>
 </html>
       `);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).send('Internal Server Error');
     }
-  } catch (error) {
-    console.error('Error:', error);
-    res.status(500).send('Internal Server Error');
-  }
 });
 
 // Helper function to escape HTML to prevent XSS
 function escapeHtml(text) {
-  if (!text) return '';
-  const map = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;'
-  };
-  return String(text).replace(/[&<>"']/g, m => map[m]);
+    if (!text) return '';
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return String(text).replace(/[&<>"']/g, m => map[m]);
 }
 
 // Helper function to validate URL
 function isValidUrl(string) {
-  try {
-    const url = new URL(string);
-    return url.protocol === 'http:' || url.protocol === 'https:';
-  } catch (_) {
-    return false;
-  }
+    try {
+        const url = new URL(string);
+        return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch (_) {
+        return false;
+    }
 }
 
 // Link Tree Public View Route
 app.get('/linktree', async (req, res) => {
-  try {
-    const BIS = req.query.BIS;
-    
-    // Check if BIS parameter is provided
-    if (!BIS) {
-      return res.send(`
+    try {
+        const BIS = req.query.BIS;
+
+        // Check if BIS parameter is provided
+        if (!BIS) {
+            return res.send(`
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -725,28 +746,28 @@ app.get('/linktree', async (req, res) => {
 </body>
 </html>
       `);
-    }
-    
-    // Fetch linktree data from API
-    try {
-      const apiUrl = `${API_BASE_URL}/api/public/linktree?BIS=${encodeURIComponent(BIS)}`;
-      console.log(`Fetching linktree from API: ${apiUrl}`);
-      
-      const response = await axiosInstance.get(apiUrl, {
-        validateStatus: () => true, // Don't throw on any status
-        headers: {
-          'Accept': 'application/json'
-          // NO Content-Type header for GET requests
-          // NO Authorization header - public endpoint
         }
-      });
-      
-      console.log(`API Response Status: ${response.status}`);
-      console.log('API Response Data:', JSON.stringify(response.data, null, 2));
-      
-      // Handle 404 - Account not found
-      if (response.status === 404) {
-        return res.send(`
+
+        // Fetch linktree data from API
+        try {
+            const apiUrl = `${API_BASE_URL}/api/public/linktree?BIS=${encodeURIComponent(BIS)}`;
+            console.log(`Fetching linktree from API: ${apiUrl}`);
+
+            const response = await axiosInstance.get(apiUrl, {
+                validateStatus: () => true, // Don't throw on any status
+                headers: {
+                    'Accept': 'application/json'
+                    // NO Content-Type header for GET requests
+                    // NO Authorization header - public endpoint
+                }
+            });
+
+            console.log(`API Response Status: ${response.status}`);
+            console.log('API Response Data:', JSON.stringify(response.data, null, 2));
+
+            // Handle 404 - Account not found
+            if (response.status === 404) {
+                return res.send(`
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -797,12 +818,12 @@ app.get('/linktree', async (req, res) => {
 </body>
 </html>
         `);
-      }
-      
-      // Handle 401 - Unauthorized
-      if (response.status === 401) {
-        console.error('API returned 401 Unauthorized. Response:', response.data);
-        return res.status(500).send(`
+            }
+
+            // Handle 401 - Unauthorized
+            if (response.status === 401) {
+                console.error('API returned 401 Unauthorized. Response:', response.data);
+                return res.status(500).send(`
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -846,22 +867,22 @@ app.get('/linktree', async (req, res) => {
 </body>
 </html>
         `);
-      }
-      
-      // Handle other error statuses
-      if (response.status !== 200) {
-        console.error(`API returned status ${response.status}. Response:`, response.data);
-        throw new Error(`API returned status ${response.status}`);
-      }
-      
-      // Parse response
-      const result = response.data;
-      console.log('Parsed API Result:', JSON.stringify(result, null, 2));
-      
-      // Check if response has error status
-      if (result && result.status === 'error') {
-        console.error('API returned error status:', result.message);
-        return res.status(404).send(`
+            }
+
+            // Handle other error statuses
+            if (response.status !== 200) {
+                console.error(`API returned status ${response.status}. Response:`, response.data);
+                throw new Error(`API returned status ${response.status}`);
+            }
+
+            // Parse response
+            const result = response.data;
+            console.log('Parsed API Result:', JSON.stringify(result, null, 2));
+
+            // Check if response has error status
+            if (result && result.status === 'error') {
+                console.error('API returned error status:', result.message);
+                return res.status(404).send(`
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -912,38 +933,38 @@ app.get('/linktree', async (req, res) => {
 </body>
 </html>
         `);
-      }
-      
-      // Check if response has the expected structure
-      if (result && result.status === 'success' && result.data && result.data.account) {
-        const account = result.data.account;
-        
-        // Check for redirection - this must happen BEFORE rendering any content
-        if (account.isRedirectionEnabled === true && account.redirectionUrl) {
-          const redirectUrl = account.redirectionUrl.trim();
-          
-          // Validate URL before redirecting
-          if (isValidUrl(redirectUrl)) {
-            console.log(`Redirecting to: ${redirectUrl}`);
-            return res.redirect(302, redirectUrl);
-          } else {
-            console.warn(`Invalid redirection URL: ${redirectUrl}`);
-            // Continue to render page if URL is invalid
-          }
-        }
-        
-        // Sort buttons by order and filter out hidden buttons
-        const sortedButtons = account.buttons 
-          ? [...account.buttons]
-              .filter(button => button.isVisible !== false)
-              .sort((a, b) => (a.order || 0) - (b.order || 0))
-          : [];
-        
-        // Generate HTML for link tree page
-        // Construct loading image URL from BIS parameter
-        const loadingImageUrl = `https://raw.githubusercontent.com/younuzbn/kochionereviewloadingasset/main/${escapeHtml(BIS)}.png`;
-        
-        const html = `
+            }
+
+            // Check if response has the expected structure
+            if (result && result.status === 'success' && result.data && result.data.account) {
+                const account = result.data.account;
+
+                // Check for redirection - this must happen BEFORE rendering any content
+                if (account.isRedirectionEnabled === true && account.redirectionUrl) {
+                    const redirectUrl = account.redirectionUrl.trim();
+
+                    // Validate URL before redirecting
+                    if (isValidUrl(redirectUrl)) {
+                        console.log(`Redirecting to: ${redirectUrl}`);
+                        return res.redirect(302, redirectUrl);
+                    } else {
+                        console.warn(`Invalid redirection URL: ${redirectUrl}`);
+                        // Continue to render page if URL is invalid
+                    }
+                }
+
+                // Sort buttons by order and filter out hidden buttons
+                const sortedButtons = account.buttons
+                    ? [...account.buttons]
+                        .filter(button => button.isVisible !== false)
+                        .sort((a, b) => (a.order || 0) - (b.order || 0))
+                    : [];
+
+                // Generate HTML for link tree page
+                // Construct loading image URL from BIS parameter
+                const loadingImageUrl = `https://raw.githubusercontent.com/younuzbn/kochionereviewloadingasset/main/${escapeHtml(BIS)}.png`;
+
+                const html = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1109,19 +1130,19 @@ app.get('/linktree', async (req, res) => {
         
         <div class="buttons-container">
             ${sortedButtons.length > 0 ? sortedButtons.map(button => {
-                const iconHtml = button.icon && button.icon.url 
-                    ? `<img src="${escapeHtml(button.icon.url)}" alt="${escapeHtml(button.label || '')}" onerror="this.parentElement.innerHTML='🔗';">`
-                    : '🔗';
-                const label = escapeHtml(button.label || 'Link');
-                const link = escapeHtml(button.link || '#');
-                
-                return `
+                    const iconHtml = button.icon && button.icon.url
+                        ? `<img src="${escapeHtml(button.icon.url)}" alt="${escapeHtml(button.label || '')}" onerror="this.parentElement.innerHTML='🔗';">`
+                        : '🔗';
+                    const label = escapeHtml(button.label || 'Link');
+                    const link = escapeHtml(button.link || '#');
+
+                    return `
             <a href="${link}" class="button-link" target="_blank" rel="noopener noreferrer">
                 <div class="button-icon">${iconHtml}</div>
                 <div class="button-label">${label}</div>
             </a>
                 `;
-            }).join('') : `
+                }).join('') : `
             <div class="empty-state">
                 No buttons added yet. Add buttons from the admin panel.
             </div>
@@ -1138,7 +1159,7 @@ app.get('/linktree', async (req, res) => {
             const BIS = '${escapeHtml(BIS)}';
             if (BIS) {
                 // Track view asynchronously (don't block page load)
-                fetch('${API_BASE_URL}/api/public/analytics/track-view', {
+                fetch('/api/analytics/track-view', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1167,25 +1188,25 @@ app.get('/linktree', async (req, res) => {
 </body>
 </html>
         `;
-        
-        return res.send(html);
-      } else {
-        // Unexpected response structure
-        throw new Error('Unexpected API response structure');
-      }
-    } catch (error) {
-      console.error('Error fetching linktree:', error.message);
-      console.error('Error details:', {
-        message: error.message,
-        code: error.code,
-        response: error.response ? {
-          status: error.response.status,
-          statusText: error.response.statusText,
-          data: error.response.data
-        } : null
-      });
-      
-      return res.status(500).send(`
+
+                return res.send(html);
+            } else {
+                // Unexpected response structure
+                throw new Error('Unexpected API response structure');
+            }
+        } catch (error) {
+            console.error('Error fetching linktree:', error.message);
+            console.error('Error details:', {
+                message: error.message,
+                code: error.code,
+                response: error.response ? {
+                    status: error.response.status,
+                    statusText: error.response.statusText,
+                    data: error.response.data
+                } : null
+            });
+
+            return res.status(500).send(`
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1229,14 +1250,14 @@ app.get('/linktree', async (req, res) => {
 </body>
 </html>
       `);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).send('Internal Server Error');
     }
-  } catch (error) {
-    console.error('Error:', error);
-    res.status(500).send('Internal Server Error');
-  }
 });
 
 app.listen(PORT, () => {
-  console.log(`Home server running on http://localhost:${PORT}`);
-  console.log(`API Base URL: ${API_BASE_URL}`);
+    console.log(`Home server running on http://localhost:${PORT}`);
+    console.log(`API Base URL: ${API_BASE_URL}`);
 });
