@@ -2,10 +2,37 @@ const express = require('express');
 const axios = require('axios');
 const path = require('path');
 const https = require('https');
+const cors = require('cors');
+require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 const API_BASE_URL = process.env.API_BASE_URL || 'https://100.48.62.235';
+const CDN_URL = process.env.CDN_URL || 'https://kochione.s3.eu-north-1.amazonaws.com';
+
+// Security and CORS middleware
+app.use(cors({
+    origin: ['https://admin.kochi.one', 'http://localhost:3000', 'http://localhost:3001'],
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// Set CSP headers to allow external resources
+app.use((req, res, next) => {
+    res.setHeader(
+        'Content-Security-Policy',
+        "default-src 'self'; " +
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.cloudflareinsights.com; " +
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+        `img-src 'self' data: ${CDN_URL} https://raw.githubusercontent.com; ` +
+        `connect-src 'self' https://static.cloudflareinsights.com ${API_BASE_URL}; ` +
+        "font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com; " +
+        "frame-ancestors 'self' https://admin.kochi.one http://localhost:3000;"
+    );
+    // Also set Access-Control-Allow-Origin for static assets if needed
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    next();
+});
 
 // Create axios instance with SSL handling for IP-based connections 1
 // Since we're connecting to an IP address, SSL certificate validation will fail
@@ -521,6 +548,7 @@ app.get('/', async (req, res) => {
             color: #86868b;
         }
     </style>
+    ${account.accountNameFont && account.accountNameFont.trim() ? '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=' + encodeURIComponent(account.accountNameFont.trim()).replace(/%20/g, '+') + ':wght@400;600;700&display=swap">' : ''}
 </head>
 <body>
     <div class="loading-screen" id="loadingScreen">
@@ -533,7 +561,7 @@ app.get('/', async (req, res) => {
         </div>
         ` : ''}
         
-        <h1 class="account-name">${escapeHtml(account.accountName || 'Link Tree')}</h1>
+        <h1 class="account-name"${account.accountNameFont && account.accountNameFont.trim() ? ' style="font-family: \'' + String(account.accountNameFont).replace(/'/g, "\\'") + '\', sans-serif;"' : ''}>${escapeHtml(account.accountName || 'Link Tree')}</h1>
         
         <div class="buttons-container">
             ${sortedButtons.length > 0 ? sortedButtons.map(button => {
@@ -1114,6 +1142,7 @@ app.get('/linktree', async (req, res) => {
             color: #86868b;
         }
     </style>
+    ${account.accountNameFont && account.accountNameFont.trim() ? '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=' + encodeURIComponent(account.accountNameFont.trim()).replace(/%20/g, '+') + ':wght@400;600;700&display=swap">' : ''}
 </head>
 <body>
     <div class="loading-screen" id="loadingScreen">
@@ -1126,7 +1155,7 @@ app.get('/linktree', async (req, res) => {
         </div>
         ` : ''}
         
-        <h1 class="account-name">${escapeHtml(account.accountName || 'Link Tree')}</h1>
+        <h1 class="account-name"${account.accountNameFont && account.accountNameFont.trim() ? ' style="font-family: \'' + String(account.accountNameFont).replace(/'/g, "\\'") + '\', sans-serif;"' : ''}>${escapeHtml(account.accountName || 'Link Tree')}</h1>
         
         <div class="buttons-container">
             ${sortedButtons.length > 0 ? sortedButtons.map(button => {
