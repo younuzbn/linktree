@@ -480,6 +480,7 @@ app.get('/', async (req, res) => {
         .button-link {
             display: flex;
             align-items: center;
+            justify-content: space-between;
             gap: 16px;
             padding: 16px 20px;
             background: #ffffff;
@@ -516,8 +517,8 @@ app.get('/', async (req, res) => {
         .button-label {
             font-size: 16px;
             font-weight: 500;
-            flex: 1;
-            text-align: left;
+            margin-left: auto;
+            text-align: right;
         }
         .empty-state {
             text-align: center;
@@ -1074,6 +1075,7 @@ app.get('/linktree', async (req, res) => {
         .button-link {
             display: flex;
             align-items: center;
+            justify-content: space-between;
             gap: 16px;
             padding: 16px 20px;
             background: #ffffff;
@@ -1110,8 +1112,8 @@ app.get('/linktree', async (req, res) => {
         .button-label {
             font-size: 16px;
             font-weight: 500;
-            flex: 1;
-            text-align: left;
+            margin-left: auto;
+            text-align: right;
         }
         .empty-state {
             text-align: center;
