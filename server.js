@@ -47,6 +47,12 @@ const axiosInstance = axios.create({
 app.use(express.static('public'));
 app.use(express.json());
 
+// Apple App Site Association (Universal Links / App Clips)
+app.get('/.well-known/apple-app-site-association', (req, res) => {
+    res.type('application/json');
+    res.sendFile(path.join(__dirname, '.well-known', 'apple-app-site-association'));
+});
+
 // Proxy endpoint for analytics to avoid CORS/SSL issues
 app.post('/api/analytics/track-view', async (req, res) => {
     try {
