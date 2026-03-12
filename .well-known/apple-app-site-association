@@ -1,0 +1,52 @@
+{
+    "applinks": {
+        "apps": [],
+        "details": [
+            {
+                "appID": "ZR2B3RJRC7.com.kochione.Kochi-One.Clip",
+                "paths": [
+                    "/card/*",
+                    "/c/*"
+                ]
+            },
+            {
+                "appID": "ZR2B3RJRC7.com.kochione.Kochi-One.Clip",
+                "paths": [
+                    "/card/",
+                    "/c/"
+                ]
+            },
+            {
+                "appID": "ZR2B3RJRC7.com.kochione.Kochi-One.Clip",
+                "paths": [
+                    "/e/"
+                ]
+            },
+            {
+                "appID": "ZR2B3RJRC7.com.kochione.Kochi-One.Clip",
+                "paths": [
+                    "/e/*"
+                ]
+            },
+            {
+                "appID": "ZR2B3RJRC7.com.kochione.Kochi-One.Clip",
+                "paths": [
+                    "/card/*",
+                    "/c/*"
+                ]
+            },
+            {
+                "appID": "ZR2B3RJRC7.com.kochione.Kochi-One.Clip",
+                "paths": [
+                    "/card/",
+                    "/c/"
+                ]
+            }
+        ]
+    },
+    "appclips": {
+        "apps": [
+            "ZR2B3RJRC7.com.kochione.Kochi-One.Clip"
+        ]
+    }
+}
