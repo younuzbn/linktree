@@ -9,7 +9,8 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 // Must be the same backend where admin creates LinkTree accounts (e.g. https://api.kochi.one)
 const API_BASE_URL = process.env.API_BASE_URL || 'https://api.kochi.one';
-const CDN_URL = process.env.CDN_URL || 'https://kochione.s3.eu-north-1.amazonaws.com';
+// Should match kochi_one_server S3/CDN (see config/s3.js cdnUrl)
+const CDN_URL = process.env.CDN_URL || 'https://img.kochi.one';
 
 // Security and CORS middleware
 app.use(cors({
@@ -25,7 +26,7 @@ app.use((req, res, next) => {
         "default-src 'self'; " +
         "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.cloudflareinsights.com; " +
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-        `img-src 'self' data: ${CDN_URL} https://raw.githubusercontent.com; ` +
+        `img-src 'self' data: https: blob: ${CDN_URL} https://raw.githubusercontent.com; ` +
         `connect-src 'self' https://static.cloudflareinsights.com ${API_BASE_URL}; ` +
         "font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com; " +
         "frame-ancestors 'self' https://admin.kochi.one http://localhost:3000;"
