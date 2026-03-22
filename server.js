@@ -12,9 +12,24 @@ const API_BASE_URL = process.env.API_BASE_URL || 'https://api.kochi.one';
 // Should match kochi_one_server S3/CDN (see config/s3.js cdnUrl)
 const CDN_URL = process.env.CDN_URL || 'https://img.kochi.one';
 
+// Same Node app is often mapped to multiple hostnames (e.g. linktree + review).
+const DEFAULT_SITE_ORIGINS = [
+    'https://admin.kochi.one',
+    'https://linktree.kochi.one',
+    'https://review.kochi.one',
+    'http://localhost:3000',
+    'http://localhost:3001'
+];
+const EXTRA_SITE_ORIGINS = (process.env.EXTRA_SITE_ORIGINS || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+const SITE_ORIGINS = [...new Set([...DEFAULT_SITE_ORIGINS, ...EXTRA_SITE_ORIGINS])];
+const frameAncestorsDirective = ["'self'", ...SITE_ORIGINS].join(' ');
+
 // Security and CORS middleware
 app.use(cors({
-    origin: ['https://admin.kochi.one', 'http://localhost:3000', 'http://localhost:3001'],
+    origin: SITE_ORIGINS,
     methods: ['GET', 'POST', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
@@ -29,7 +44,7 @@ app.use((req, res, next) => {
         `img-src 'self' data: https: blob: ${CDN_URL} https://raw.githubusercontent.com; ` +
         `connect-src 'self' https://static.cloudflareinsights.com ${API_BASE_URL}; ` +
         "font-src 'self' data: https://fonts.gstatic.com https://fonts.googleapis.com; " +
-        "frame-ancestors 'self' https://admin.kochi.one http://localhost:3000;"
+        `frame-ancestors ${frameAncestorsDirective};`
     );
     // Also set Access-Control-Allow-Origin for static assets if needed
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -566,7 +581,7 @@ app.get('/', async (req, res) => {
     <div class="container">
         ${account.bannerImage && account.bannerImage.url && !account.isBannerHidden ? `
         <div class="banner">
-            <img src="${escapeHtml(account.bannerImage.url)}" alt="Banner" onerror="this.style.display='none';">
+            <img src="${escapeHtml(account.bannerImage.url)}" alt="Banner" referrerpolicy="no-referrer" loading="lazy" onerror="this.style.display='none';">
         </div>
         ` : ''}
         
@@ -575,7 +590,7 @@ app.get('/', async (req, res) => {
         <div class="buttons-container">
             ${sortedButtons.length > 0 ? sortedButtons.map(button => {
                     const iconHtml = button.icon && button.icon.url
-                        ? `<img src="${escapeHtml(button.icon.url)}" alt="${escapeHtml(button.label || '')}" onerror="this.parentElement.innerHTML='🔗';">`
+                        ? `<img src="${escapeHtml(button.icon.url)}" alt="${escapeHtml(button.label || '')}" referrerpolicy="no-referrer" loading="lazy" onerror="this.parentElement.innerHTML='🔗';">`
                         : '🔗';
                     const label = escapeHtml(button.label || 'Link');
                     const link = escapeHtml(button.link || '#');
@@ -1161,7 +1176,7 @@ app.get('/linktree', async (req, res) => {
     <div class="container">
         ${account.bannerImage && account.bannerImage.url && !account.isBannerHidden ? `
         <div class="banner">
-            <img src="${escapeHtml(account.bannerImage.url)}" alt="Banner" onerror="this.style.display='none';">
+            <img src="${escapeHtml(account.bannerImage.url)}" alt="Banner" referrerpolicy="no-referrer" loading="lazy" onerror="this.style.display='none';">
         </div>
         ` : ''}
         
@@ -1170,7 +1185,7 @@ app.get('/linktree', async (req, res) => {
         <div class="buttons-container">
             ${sortedButtons.length > 0 ? sortedButtons.map(button => {
                     const iconHtml = button.icon && button.icon.url
-                        ? `<img src="${escapeHtml(button.icon.url)}" alt="${escapeHtml(button.label || '')}" onerror="this.parentElement.innerHTML='🔗';">`
+                        ? `<img src="${escapeHtml(button.icon.url)}" alt="${escapeHtml(button.label || '')}" referrerpolicy="no-referrer" loading="lazy" onerror="this.parentElement.innerHTML='🔗';">`
                         : '🔗';
                     const label = escapeHtml(button.label || 'Link');
                     const link = escapeHtml(button.link || '#');
