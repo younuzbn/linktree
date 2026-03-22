@@ -7,7 +7,8 @@ require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const API_BASE_URL = process.env.API_BASE_URL || 'https://100.48.62.235';
+// Must be the same backend where admin creates LinkTree accounts (e.g. https://api.kochi.one)
+const API_BASE_URL = process.env.API_BASE_URL || 'https://api.kochi.one';
 const CDN_URL = process.env.CDN_URL || 'https://kochione.s3.eu-north-1.amazonaws.com';
 
 // Security and CORS middleware
